@@ -13,33 +13,25 @@ from app.store import store
 
 app = FastAPI(title="Medvise Backend", version="0.1.0", docs_url="/docs")
 
-# ===== CORS =====
-# Prod'da Render env'den gelen FRONTEND_ORIGIN (örn: https://medvise-deploy.vercel.app)
-# Local'de Vite default portu (5173)
-origins = list(
-    set(
-        filter(
-            None,
-            [
-                settings.FRONTEND_ORIGIN,        # prod vercel domaini
-                "http://localhost:5173",         # vite
-                "http://127.0.0.1:5173",
-            ],
-        )
-    )
-)
+# ==== CORS ====
+# Prod: Render env -> FRONTEND_ORIGIN (örn: https://medvise-deploy.vercel.app)
+# Local: Vite (5173)
+allow_list = list(filter(None, [
+    settings.FRONTEND_ORIGIN,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,         # spesifik domain(ler)
-    # İstersen Vercel preview URL’lerini de açmak için şu regex'i aktif edebilirsin:
-    # allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
+    allow_origins=allow_list,                         # belirli domainler (prod + local)
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",  # tüm Vercel preview'ları da aç ✅
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ===== Root & Health =====
+# ==== Root & Health ====
 @app.get("/")
 def root():
     return {"status": "ok", "service": "medvise-backend"}
@@ -48,7 +40,7 @@ def root():
 def health():
     return {"ok": True}
 
-# ===== Hata günlüğü (422) =====
+# ==== 422 hata günlüğü ====
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     try:
@@ -62,16 +54,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     print("Raw body:", raw_text)
     print("Errors:", json.dumps(exc.errors(), ensure_ascii=False, indent=2))
     print("============================")
-
     return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
-# ===== Routers =====
+# ==== Routers ====
 app.include_router(sessions.router)
 app.include_router(assessment.router)
 app.include_router(labs.router)
 app.include_router(chat.router)
 
-# ===== TTL temizlik döngüsü =====
+# ==== TTL temizlik döngüsü ====
 async def janitor():
     while True:
         store.sweep()
