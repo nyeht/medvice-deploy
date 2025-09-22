@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { createSession, assessmentInitial, chatSend } from "@/lib/gpt-api";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessage {
   id: string;
@@ -112,6 +113,17 @@ export const SymptomChat = ({ patientData, onBack }: SymptomChatProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientData]);
 
+  // Kullanıcı mesajını Supabase'e kaydet
+  const saveUserMessage = async (message: string) => {
+    try {
+      await supabase
+        .from('chat_messages')
+        .insert([{ user_message: message }]);
+    } catch (error) {
+      console.error('Mesaj kaydedilirken hata:', error);
+    }
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
@@ -126,6 +138,9 @@ export const SymptomChat = ({ patientData, onBack }: SymptomChatProps) => {
     setInputMessage("");
     setIsLoading(true);
     setError(null);
+
+    // Kullanıcı mesajını Supabase'e kaydet
+    await saveUserMessage(userMessage.content);
 
     try {
       // gpt-api chatSend session’ı içeriden yönetir
