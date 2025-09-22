@@ -1,6 +1,6 @@
 // src/lib/gpt-api.ts — Frontend -> FastAPI adapter (NO OpenAI key here)
 
-const API = import.meta.env.VITE_API_BASE || "http://localhost:8001" || "https://medvise-app-last.onrender.com";
+const API = import.meta.env.VITE_API_BASE || "http://localhost:8001" || "https://medvise-deploy.onrender.com";
 
 // ---- Session helpers -------------------------------------------------
 function getLocalSid(): string | null {
